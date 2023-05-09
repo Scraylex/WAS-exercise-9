@@ -81,8 +81,35 @@ robot_td("https://raw.githubusercontent.com/Interactions-HSG/example-tds/main/td
  * Body: unifies the variable Celcius with the 1st temperature reading from the list TempReadings
 */
 @select_reading_task_0_plan
-+!select_reading(TempReadings, Celcius) : true <-
-    .nth(0, TempReadings, Celcius).
++!select_reading(Agent):  true  <-
+	.findall([X, Y], temperature(X)[source(Y)], TempAgValues);
+	.findall(K, .member([K, _], TempAgValues), TempValues);
+	.findall(K, .member([_, K], TempAgValues), AgValues);
+	for ( .range(I, 0, (.length(TempValues) - 1)) ) {
+        .nth(I, AgValues, Ag);
+		//String equality workaround
+		equals(Ag, Agent, X);
+		if(X) {
+			.nth(I, TempValues, Temp);
+			.print("Picked Agent: ", Ag, " with Temperature: ", Temp);
+			+temp_to_send(Temp);
+		}
+    }.
+
+
+// +!select_reading([Elem | TempReadings], Agent, Celcius): true <-
+// 	.print("loopdloop");
+// 	.print("current elem: ", Elem);
+// 	.print(temperature(Temp)[source(Src)] & Src == Agent & Temp == Elem);
+// 	.print("Agent: ", Agent);
+// 	?temperature(Temp)[source(Agent)];
+// 	.print("Test: ", Temp);
+// 	// .print(temperature(Temp)[source(Src)])
+// 	if (temperature(Temp)[source(Src)] & Src == Agent & Temp == Elem) {
+// 		!select_reading(Elem, Agent, Celcius);
+// 	} else {
+// 		!select_reading(TempReadings, Agent, Celcius);
+// 	}.
 
 /* 
  * Plan for reacting to the addition of the goal !manifest_temperature
@@ -93,16 +120,43 @@ robot_td("https://raw.githubusercontent.com/Interactions-HSG/example-tds/main/td
  * from Celcius to binary degrees that are compatible with the movement of the robotic arm. 
  * Finally, it manifests the temperature with the robotic arm
 */
+
+@initialize_rating_plan
++!initialize_rating: true <-
+	.findall(Src, temperature(_)[source(Src)], SourceAgents);
+	for (.member(Agent, SourceAgents)) {
+		.findall(ITRating, interaction_trust(_, Agent, _, ITRating), ITRatings);
+		initialize_average_rating(Agent, ITRatings, AvgITRating);
+		.print("Avg ITRating: ", AvgITRating, " of Agent: ", Agent);
+	}.
+
 @manifest_temperature_plan 
 +!manifest_temperature : robot_td(Location) <-
-
 	// creates list TempReadings with all the broadcasted temperature readings
-	.findall(TempReading, temperature(TempReading)[source(Ag)], TempReadings);
-	.print("Temperature readings to evaluate:", TempReadings);
-
+	// .findall(Ag, temperature(TempReading)[source(Ag)], TempReadings);
+	!initialize_rating;
+	!query_agent_certificates;
+	get_most_trusted(Agent);
+	.print("I am most trusted Agent: ", Agent);
 	// creates goal to select one broadcasted reading to manifest
-	!select_reading(TempReadings, Celcius);
+	!select_reading(Agent);
+	!send_temperature.
 
+@query_agent_certificates_plan
++!query_agent_certificates : true <-
+	.findall(Ag, temperature(_)[source(Ag)], Agents);
+
+	for ( .member(Ag, Agents) ) {
+		.send(Ag, tell, send_certificate);
+    }.
+
++certified_reputation(_, _, _, CRRating)[source(Ag)] : true <-
+	.print("Adding certified rep: ", CRRating, " for agent: ", Ag);
+	add_certified_rep(Ag, CRRating).
+
+
+@send_temperature_plan
++!send_temperature : temp_to_send(Celcius) & robot_td(Location) <-
 	// manifests the selected reading stored in the variable Celcius
 	.print("Manifesting temperature (Celcius): ", Celcius);
 	convert(Celcius, -20.00, 20.00, 200.00, 830.00, Degrees)[artifact_id(ConverterId)]; // converts Celcius to binary degress based on the input scale
@@ -120,6 +174,7 @@ robot_td("https://raw.githubusercontent.com/Interactions-HSG/example-tds/main/td
 
 	// invokes the action onto:SetWristAngle for manifesting the temperature with the wrist of the robotic arm
 	invokeAction("https://ci.mines-stetienne.fr/kg/ontology#SetWristAngle", ["https://www.w3.org/2019/wot/json-schema#IntegerSchema"], [Degrees])[artifact_id(leubot1)].
+
 
 /* Import behavior of agents that work in CArtAgO environments */
 { include("$jacamoJar/templates/common-cartago.asl") }

@@ -85,6 +85,11 @@ i_have_plans_for(R) :- not (role_goal(R,G) & not has_plan_for(G)).
 +certified_reputation(CertificationAgent, SourceAgent, MessageContent, CRRating): true <-
 	.print("Certified Reputation Rating: (", CertificationAgent, ", ", SourceAgent, ", ", MessageContent, ", ", CRRating, ")").
 
++send_certificate[source(Src)] : certified_reputation(CertificationAgent, TargetAgent, MessageContent, CRRating) <-
+	.print("Sending certificate to ", Src);
+	.send(Src, tell, certified_reputation(CertificationAgent, TargetAgent, MessageContent, CRRating)).
+
+
 /* Import behavior of agents that work in CArtAgO environments */
 { include("$jacamoJar/templates/common-cartago.asl") }
 

@@ -1,4 +1,5 @@
 // rogue leader agent is a type of sensing agent
+is_rogue_leader.
 
 /* Initial goals */
 !set_up_plans. // the agent has the goal to add pro-rogue plans
