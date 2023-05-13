@@ -77,6 +77,24 @@ received_readings([]).
   //     .send(Src, tell, certified_reference(rating(sensing_agent_9, certification_agent, quality, temperature(10), 1.0), signedBy(certification_agent)));
   // }).
 
++send_witness_rep : true <-
+	.findall([X, Y], temperature(X)[source(Y)], TempAgValues);
+	.findall(K, .member([K, _], TempAgValues), TempValues);
+	.findall(K, .member([_, K], TempAgValues), AgValues);
+    for ( .range(I, 0, (.length(TempValues) - 1)) ) {
+    	.nth(I, AgValues, Ag);
+        .my_name(Me);
+        is_rogue_agent(Ag, X);
+        .nth(I, TempValues, Temp);
+        if(X) {
+            .print("Sent: ", 1, " for agent: ", Ag);
+          	.send(acting_agent, tell, witness_reputation(Me, Ag, temperature(Temp)[source(Ag)], 1));
+        } else {
+            .print("Sent: ", -1, " for agent: ", Ag);
+          	.send(acting_agent, tell, witness_reputation(Me, Ag, temperature(Temp)[source(Ag)], -1));
+        }
+      }.
+
 
 
 /* Import behavior of sensing agent */

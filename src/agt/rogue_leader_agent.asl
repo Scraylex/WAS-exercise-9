@@ -25,5 +25,24 @@ is_rogue_leader.
       .print("Read temperature (Celcious): ", -2);
       .broadcast(tell, temperature(-2))}).
 
++send_witness_rep : true <-
+	.findall([X, Y], temperature(X)[source(Y)], TempAgValues);
+	.findall(K, .member([K, _], TempAgValues), TempValues);
+	.findall(K, .member([_, K], TempAgValues), AgValues);
+    for ( .range(I, 0, (.length(TempValues) - 1)) ) {
+    	.nth(I, AgValues, Ag);
+        .my_name(Me);
+        is_rogue_agent(Ag, X);
+        .nth(I, TempValues, Temp);
+        if(X) {
+            .print("Sent: ", 1, " for agent: ", Ag);
+          	.send(acting_agent, tell, witness_reputation(Me, Ag, temperature(Temp)[source(Ag)], 1));
+        } else {
+            .print("Sent: ", -1, " for agent: ", Ag);
+          	.send(acting_agent, tell, witness_reputation(Me, Ag, temperature(Temp)[source(Ag)], -1));
+        }
+      }.
+
+
 /* Import behavior of sensing agent */
 { include("sensing_agent.asl")}

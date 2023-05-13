@@ -62,17 +62,18 @@ robot_td("https://raw.githubusercontent.com/Interactions-HSG/example-tds/main/td
  * Context: true (the plan is always applicable)
  * Body: prints new certified reputation rating (relevant from Task 3 and on)
 */
-+certified_reputation(CertificationAgent, SourceAgent, MessageContent, CRRating): true <-
-	.print("Certified Reputation Rating: (", CertificationAgent, ", ", SourceAgent, ", ", MessageContent, ", ", CRRating, ")").
-
++certified_reputation(CertificationAgent, SourceAgent, MessageContent, CRRating)[source(Ag)]: true <-
+	.print("Certified Reputation Rating: (", CertificationAgent, ", ", SourceAgent, ", ", MessageContent, ", ", CRRating, ")");
+	add_certified_rep(Ag, CRRating).
 /* 
  * Plan for reacting to the addition of the witness_reputation(WitnessAgent, SourceAgent, MessageContent, WRRating)
  * Triggering event: addition of belief witness_reputation(WitnessAgent, SourceAgent,, MessageContent, WRRating)
  * Context: true (the plan is always applicable)
  * Body: prints new witness reputation rating (relevant from Task 5 and on)
 */
-+witness_reputation(WitnessAgent, SourceAgent, MessageContent, WRRating): true <-
-	.print("Witness Reputation Rating: (", WitnessAgent, ", ", SourceAgent, ", ", MessageContent, ", ", WRRating, ")").
++witness_reputation(WitnessAgent, SourceAgent, MessageContent, WRRating)[source(Ag)]: true <-
+	.print("Witness Reputation Rating: (", WitnessAgent, ", ", SourceAgent, ", ", MessageContent, ", ", WRRating, ")");
+	add_witness_rep(SourceAgent, WRRating).
 
 /* 
  * Plan for reacting to the addition of the goal !select_reading(TempReadings, Celcius)
@@ -136,8 +137,11 @@ robot_td("https://raw.githubusercontent.com/Interactions-HSG/example-tds/main/td
 	// .findall(Ag, temperature(TempReading)[source(Ag)], TempReadings);
 	!initialize_rating;
 	!query_agent_certificates;
-	get_most_trusted(Agent);
-	.print("I am most trusted Agent: ", Agent);
+	.wait(4000);
+	!query_witness_reputations;
+	.wait(6000);
+	get_most_trusted(Agent, Rating);
+	.print("I am most trusted Agent: ", Agent, " with a rating of: ", Rating);
 	// creates goal to select one broadcasted reading to manifest
 	!select_reading(Agent);
 	!send_temperature.
@@ -150,9 +154,12 @@ robot_td("https://raw.githubusercontent.com/Interactions-HSG/example-tds/main/td
 		.send(Ag, tell, send_certificate);
     }.
 
-+certified_reputation(_, _, _, CRRating)[source(Ag)] : true <-
-	.print("Adding certified rep: ", CRRating, " for agent: ", Ag);
-	add_certified_rep(Ag, CRRating).
+@query_witness_reputation_plan
++!query_witness_reputations : true <-
+	.findall(Ag, temperature(_)[source(Ag)], Agents);
+	for ( .member(Ag, Agents) ) {
+		.send(Ag, tell, send_witness_rep);
+    }.
 
 
 @send_temperature_plan

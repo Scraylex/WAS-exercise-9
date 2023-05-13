@@ -35,7 +35,27 @@ i_have_plans_for(R) :- not (role_goal(R,G) & not has_plan_for(G)).
 	.print("Reading the temperature");
 	readCurrentTemperature(47.42, 9.37, Celcius); // reads the current temperature using the artifact
 	.print("Read temperature (Celcius): ", Celcius);
-	.broadcast(tell, temperature(Celcius)). // broadcasts the temperature reading
+	.broadcast(tell, temperature(Celcius)).
+ // broadcasts the temperature reading
+
+
++send_witness_rep : true <-
+	.findall([X, Y], temperature(X)[source(Y)], TempAgValues);
+	.findall(K, .member([K, _], TempAgValues), TempValues);
+	.findall(K, .member([_, K], TempAgValues), AgValues);
+    for ( .range(I, 0, (.length(TempValues) - 1)) ) {
+    	.nth(I, AgValues, Ag);
+        .my_name(Me);
+        is_rogue_agent(Ag, X);
+        .nth(I, TempValues, Temp);
+        if(not X) {
+            .print("Sent: ", 1, " for agent: ", Ag);
+          	.send(acting_agent, tell, witness_reputation(Me, Ag, temperature(Temp)[source(Ag)], 1));
+        } else {
+            .print("Sent: ", -1, " for agent: ", Ag);
+          	.send(acting_agent, tell, witness_reputation(Me, Ag, temperature(Temp)[source(Ag)], -1));
+        }
+      }.
 
 /* 
  * Plan for reacting to the addition of the belief organization_deployed(OrgName)
